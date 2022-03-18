@@ -31,4 +31,6 @@
 *.out
 *.app
 
+# My ignores
 main
+.vscode/
