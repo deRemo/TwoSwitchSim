@@ -34,3 +34,5 @@
 # My ignores
 main
 .vscode/
+input.txt
+output.txt
