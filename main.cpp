@@ -51,7 +51,8 @@ float total_queue_delay;
 void  init(void);                             //Initializes the simulation model and starts the simulation
 void  timing(void);                           //Determines the next event and perform the (simulated) time advance
 void  arrival_event(q_info_t* q);             //Arrival at queue 1 or 2 event routine
-void  departure_event(int d_event);           //Departure from queue 1 or 2 event routine
+void  departure_event(q_info_t* q, 
+                      int d_event);           //Departure from queue 1 or 2 event routine
 void  report(void);                           //Generates report and print in output file
 float expon(float mean);                      //Exponential variate generator (Inverse-Transform Method)
 float trunc_expon(float mean, int a, int b);  //Doubly truncated exponential variate generator (Inverse-Transform Method)
@@ -109,10 +110,10 @@ int main(){
             arrival_event(&q1);
             break;
         case D1:
-            departure_event(D1);
+            departure_event(&q1, D1);
             break;
         case D2:
-            departure_event(D2);
+            departure_event(&q2, D2);
             break;
         }
     }
@@ -181,16 +182,8 @@ void arrival_event(q_info_t* q) {
     event_list.push(std::make_tuple(sim_clock + expon(mean_interarrival_time), A1));
 }
 
-void departure_event(int d_event) {
-    q_info_t* q;
-
-    if (d_event == D1){
-        q = &q1;
-    }
-    else if (d_event == D2){
-        q = &q2;
-    }
-    else{
+void departure_event(q_info_t* q, int d_event) {
+    if (d_event != D1 && d_event != D2){
         std::cerr << "Error: unrecognized (departure) event type" << std::endl;
         exit(EXIT_FAILURE);
     }
