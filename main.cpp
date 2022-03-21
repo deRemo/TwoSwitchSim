@@ -16,7 +16,10 @@
 #define A1        2  //Arrival at queue 1
 #define D1        3  //Departure from queue 1 (includes an immediate arrival at queue 2)
 #define D2        4  //Departure from queue 2
-#define MACRONAME(x) #x
+
+//Queue names
+#define Q1        5
+#define Q2        6
 
 //Events are represented as tuples <event_time, event_type>
 typedef std::tuple<float, int> tup_t;
@@ -28,7 +31,7 @@ int   q_limit;
 
 //Useful information about the state of a queue
 typedef struct q_info {
-    std::string name;               //queue name
+    int name;                       //queue name
     std::deque<float> pending_pkts; //arrival time of currently waiting/delayed packets
     int n_pkts;                     //size of pending_pkts
     int status;                     //queue status (either BUSY or IDLE)
@@ -111,6 +114,7 @@ int main(){
             break;
         case D1:
             departure_event(&q1, D1);
+            arrival_event(&q2);
             break;
         case D2:
             departure_event(&q2, D2);
@@ -127,8 +131,8 @@ int main(){
 void init(void) {
     sim_clock = 0;
 
-    q1.name = "q1";
-    q2.name = "q2";
+    q1.name = Q1;
+    q2.name = Q2;
 
     q1.n_pkts = 0;
     q2.n_pkts = 0;
@@ -201,7 +205,7 @@ void departure_event(q_info_t* q, int d_event) {
         total_queue_delay += sim_clock - q->pending_pkts.front();
         q->pending_pkts.pop_front();
 
-        /*if (event_type == D1) {
+        /*if (d_event == D1) {
             event_list.push(std::make_tuple(sim_clock + expon(mean_service_time), D2));
         }*/
 
