@@ -164,7 +164,7 @@ void timing(void) {
 void arrival_event(q_info_t* q) {
     std::cout << "arrival" << std::endl;
 
-    if (q->status == BUSY) { //Store in queue
+    if (q->status == BUSY) { //Packet cannot be processed immediately, keep it pending
         q->n_pkts += 1;
 
         if (q->n_pkts > q_limit){
@@ -182,7 +182,7 @@ void arrival_event(q_info_t* q) {
         event_list.push(std::make_tuple(sim_clock + expon(mean_service_time), D1));
     }
 
-    //schedule next arrival
+    //schedule next arrival (or else the simulation ends)
     event_list.push(std::make_tuple(sim_clock + expon(mean_interarrival_time), A1));
 }
 
@@ -192,12 +192,12 @@ void departure_event(q_info_t* q, int d_event) {
         exit(EXIT_FAILURE);
     }
 
-    std::cout << "departure " << q->name << std::endl;
+    //finished processing one packet, start processing the first pending one (if any)
 
-    if (q->n_pkts == 0) {
+    if (q->n_pkts == 0) { //queue is empty, no pending packets
         q->status = IDLE;
     }
-    else {
+    else { //queue is not empty, thus start processing the next pending packet
         q->n_pkts -= 1;
         processed_pkts += 1;
 
@@ -209,7 +209,7 @@ void departure_event(q_info_t* q, int d_event) {
             event_list.push(std::make_tuple(sim_clock + expon(mean_service_time), D2));
         }*/
 
-        //schedule departure
+        //schedule departure (= service completion) of the next pending packet
         event_list.push(std::make_tuple(sim_clock + expon(mean_service_time), D1));
     }
 }
