@@ -18,8 +18,8 @@
 #define D2        4  //Departure from queue 2
 
 //Queue names
-#define Q1        5
-#define Q2        6
+inline const std::string Q1 = "Q1";
+inline const std::string Q2 = "Q2";
 
 //Events are represented as tuples <event_time, event_type>
 typedef std::tuple<float, int> tup_t;
@@ -31,7 +31,7 @@ int   q_limit;
 
 //Useful information about the state of a queue
 typedef struct q_info {
-    int name;                       //queue name
+    std::string name;                       //queue name
     std::deque<float> pending_pkts; //arrival time of currently waiting/delayed packets
     int n_pkts;                     //size of pending_pkts
     int status;                     //queue status (either BUSY or IDLE)
@@ -162,7 +162,7 @@ void timing(void) {
 }
 
 void arrival_event(q_info_t* q) {
-    //std::cout << "arrival" << std::endl;
+    std::cout << "arrival" << std::endl;
 
     if (q->status == BUSY) { //Store in queue
         q->n_pkts += 1;
@@ -192,7 +192,7 @@ void departure_event(q_info_t* q, int d_event) {
         exit(EXIT_FAILURE);
     }
 
-    //std::cout << "departure " << q->name << std::endl;
+    std::cout << "departure " << q->name << std::endl;
 
     if (q->n_pkts == 0) {
         q->status = IDLE;
