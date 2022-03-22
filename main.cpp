@@ -49,7 +49,8 @@ int   seed;
 
 //Stat counters
 int   processed_pkts;
-float total_queue_delay;
+float total_queue_delay;  //Sum of all queue delays (=time waiting in queue)
+float total_service;      //Sum of all service times 
 
 void  init(void);                             //Initializes the simulation model and starts the simulation
 void  timing(void);                           //Determines the next event and perform the (simulated) time advance
@@ -179,7 +180,10 @@ void arrival_event(q_info_t* q) {
         q->status = BUSY;
 
         //schedule departure (= service completion) (= packet processed)
-        event_list.push(std::make_tuple(sim_clock + expon(mean_service_time), D1));
+        float service_time = expon(mean_service_time);
+        event_list.push(std::make_tuple(sim_clock + service_time, D1));
+
+        total_service += service_time;
     }
 
     //schedule next arrival (or else the simulation ends)
@@ -210,7 +214,10 @@ void departure_event(q_info_t* q, int d_event) {
         }*/
 
         //schedule departure (= service completion) of the next pending packet
-        event_list.push(std::make_tuple(sim_clock + expon(mean_service_time), D1));
+        float service_time = expon(mean_service_time);
+        event_list.push(std::make_tuple(sim_clock + service_time, D1));
+
+        total_service += service_time;
     }
 }
 
@@ -221,9 +228,9 @@ void report(void){
         exit(EXIT_FAILURE);
     }
 
-    float avg_system_delay = total_queue_delay / processed_pkts;
+    float avg_system_delay = (total_queue_delay + total_service) / processed_pkts;
 
-    std::cout << "avg system delay: " << avg_system_delay << std::endl;
+    std::cout << "avg system delay: " << avg_system_delay << " time units" << std::endl;
     ostream << avg_system_delay;
 
     ostream.close();
