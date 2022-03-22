@@ -9,13 +9,13 @@
 #include <math.h> 
 
 //System status mnemonics
-#define IDLE      0
-#define BUSY      1
+inline const int IDLE = 0;
+inline const int BUSY = 1;
 
 //Event type mnemonics
-#define A1        2  //Arrival at queue 1
-#define D1        3  //Departure from queue 1 (includes an immediate arrival at queue 2)
-#define D2        4  //Departure from queue 2
+inline const int A1 = 2;  //Arrival at queue 1
+inline const int D1 = 3;  //Departure from queue 1 (includes an immediate arrival at queue 2)
+inline const int D2 = 4;  //Departure from queue 2
 
 //Queue names
 inline const std::string Q1 = "Q1";
@@ -31,7 +31,7 @@ int   q_limit;
 
 //Useful information about the state of a queue
 typedef struct q_info {
-    std::string name;                       //queue name
+    std::string name;               //queue name
     std::deque<float> pending_pkts; //arrival time of currently waiting/delayed packets
     int n_pkts;                     //size of pending_pkts
     int status;                     //queue status (either BUSY or IDLE)
@@ -106,6 +106,7 @@ int main(){
     init();
 
     while (processed_pkts < num_pkts){
+        //std::cout << "processed_pkts: " << processed_pkts << std::endl;
         timing();
         
         switch (next_event_type){
@@ -114,7 +115,6 @@ int main(){
             break;
         case D1:
             departure_event(&q1, D1);
-            arrival_event(&q2);
             break;
         case D2:
             departure_event(&q2, D2);
