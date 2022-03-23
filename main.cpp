@@ -35,6 +35,8 @@ typedef struct q_info {
     std::deque<float> pending_pkts; //arrival time of currently waiting/delayed packets
     int n_pkts;                     //size of pending_pkts
     int status;                     //queue status (either BUSY or IDLE)
+
+    q_info* next;                   //reference to the next queue
 } q_info_t;
 
 q_info_t q1;
@@ -60,6 +62,8 @@ void  departure_event(q_info_t* q,
 void  report(void);                           //Generates report and print in output file
 float expon(float mean);                      //Exponential variate generator (Inverse-Transform Method)
 float trunc_expon(float mean, int a, int b);  //Doubly truncated exponential variate generator (Inverse-Transform Method)
+
+void connect(q_info_t* q1, q_info_t* q2);     //Connect q1 to q2 (q1->q2)
 
 template <typename T>
 void print_q(std::deque<T> q){
@@ -141,8 +145,12 @@ void init(void) {
     q1.status = IDLE;
     q2.status = IDLE;
 
+    connect(&q1, &q2);
+    q2.next = NULL;
+
     processed_pkts = 0;
     total_queue_delay = 0;
+    total_service = 0;
 
     //Generate first event
     event_list.push(std::make_tuple(expon(mean_interarrival_time), A1));
@@ -163,7 +171,7 @@ void timing(void) {
 }
 
 void arrival_event(q_info_t* q) {
-    std::cout << "arrival" << std::endl;
+    std::cout << "arrival   " << q->name << "  (" << sim_clock << ")" << std::endl;
 
     if (q->status == BUSY) { //Packet cannot be processed immediately, keep it pending
         q->n_pkts += 1;
@@ -176,42 +184,58 @@ void arrival_event(q_info_t* q) {
         q->pending_pkts.push_back(sim_clock);
     }
     else { //Process packet immediately (no queue delay)
-        processed_pkts += 1;
+
+        if (!q->next){
+            processed_pkts += 1;
+        }
+        
         q->status = BUSY;
 
         //schedule departure (= service completion) (= packet processed)
         float service_time = expon(mean_service_time);
-        event_list.push(std::make_tuple(sim_clock + service_time, D1));
+
+        int event_type = D1;
+        if (!q->next){ //if it doesn't exist a next queue, then the packet is in queue 2
+            event_type = D2;
+        }
+
+        event_list.push(std::make_tuple(sim_clock + service_time, event_type));
 
         total_service += service_time;
     }
 
-    //schedule next arrival (or else the simulation ends)
-    event_list.push(std::make_tuple(sim_clock + expon(mean_interarrival_time), A1));
+    //schedule next arrival (or else the simulation ends), but only for queue 1
+    if(q->next){
+        event_list.push(std::make_tuple(sim_clock + expon(mean_interarrival_time), A1));
+    }
 }
 
 void departure_event(q_info_t* q, int d_event) {
+    std::cout << "departure " << q->name << "  (" << sim_clock << ")" << std::endl;
     if (d_event != D1 && d_event != D2){
         std::cerr << "Error: unrecognized (departure) event type" << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    //finished processing one packet, start processing the first pending one (if any)
+    //finished processing one packet
+    if (q->next) { //immediate arrival to the next queue (if any)
+        arrival_event(q->next);
+    }
 
+    //start processing the first pending one (if any)
     if (q->n_pkts == 0) { //queue is empty, no pending packets
         q->status = IDLE;
     }
     else { //queue is not empty, thus start processing the next pending packet
         q->n_pkts -= 1;
-        processed_pkts += 1;
+
+        if (!q->next){
+            processed_pkts += 1;
+        }
 
         //compute and store the packet's queue delay
         total_queue_delay += sim_clock - q->pending_pkts.front();
         q->pending_pkts.pop_front();
-
-        /*if (d_event == D1) {
-            event_list.push(std::make_tuple(sim_clock + expon(mean_service_time), D2));
-        }*/
 
         //schedule departure (= service completion) of the next pending packet
         float service_time = expon(mean_service_time);
@@ -245,4 +269,8 @@ float expon(float mean){
 
 float trunc_expon(float mean, int a, int b){
     return 1/a - (log(1 - lcgrand(seed) * (1 - exp((1/a - 1/b) / mean)))) * mean;
+}
+
+void connect(q_info_t* q1, q_info_t* q2){
+    q1->next = q2;
 }
