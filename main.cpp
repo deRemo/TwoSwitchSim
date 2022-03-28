@@ -83,14 +83,6 @@ float trunc_expon(float mean, int a, int b);  //Doubly truncated exponential var
 
 void connect(q_info_t* q1, q_info_t* q2);     //Connect q1 to q2 (q1->q2)
 
-template <typename T>
-void print_q(std::deque<T> q){
-    while (!q.empty() ) {
-        std::cout << q.front() << "\n";
-        q.pop_front();
-    }
-}
-
 int main(){
     //Read system configuration and generator seed
     std::fstream istream("input.txt", std::ios::in);
@@ -157,15 +149,16 @@ void init(void) {
     sim_clock = 0;
     current_id = 1;
 
+    processed_pkts = 0;
+    total_queue_delay = 0;
+    total_service = 0;
+
     //register the queues
     q_registry[q1.id] = &q1;
     q_registry[q2.id] = &q2;
 
+    //connect the queues
     connect(&q1, &q2);
-
-    processed_pkts = 0;
-    total_queue_delay = 0;
-    total_service = 0;
 
     //Generate first event in the first queue
     event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A, q1.id));
@@ -275,5 +268,10 @@ float trunc_expon(float mean, int a, int b){
 
 
 void connect(q_info_t* q1, q_info_t* q2){
+    if (q1->next){
+        std::cerr << q1->name << " was already connected to a queue" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     q1->next = q2;
 }
