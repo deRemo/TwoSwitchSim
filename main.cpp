@@ -170,6 +170,22 @@ void timing(void) {
     next_event_type = std::get<1>(next_event);
 }
 
+//schedule departure (= service completion) from q
+void schedule_departure_event_from(q_info_t* q){
+    //If next queue doesn't exist, the packet has been completely processed by the queue system
+    if (!q->next){
+        processed_pkts += 1;
+    }
+
+    float service_time = expon(mean_service_time);
+
+    //Identify packet location in order to pair the departure time with the right event type
+    int event_type = (!q->next) ? D2 : D1;
+
+    event_list.push(std::make_tuple(sim_clock + service_time, event_type));
+    total_service += service_time;
+}
+
 void arrival_event(q_info_t* q) {
     std::cout << "arrival   " << q->name << "  (" << sim_clock << ")" << std::endl;
 
@@ -184,25 +200,8 @@ void arrival_event(q_info_t* q) {
         q->pending_pkts.push_back(sim_clock);
     }
     else { //Process packet immediately (no queue delay)
-
-        //If next queue doesn't exist, the packet has been completely processed by the queue system
-        if (!q->next){
-            processed_pkts += 1;
-        }
-        
         q->status = BUSY;
-
-        //schedule departure (= service completion)
-        float service_time = expon(mean_service_time);
-
-        //Identify packet location in order to pair the departure time with the right event type
-        int event_type = D1;
-        if (!q->next){
-            event_type = D2;
-        }
-
-        event_list.push(std::make_tuple(sim_clock + service_time, event_type));
-        total_service += service_time;
+        schedule_departure_event_from(q);
     }
 
     //schedule next arrival (or else the simulation ends), but only for the first queue
@@ -230,26 +229,12 @@ void departure_event(q_info_t* q, int d_event) {
     else { //queue is not empty, thus start serving the next pending packet
         q->n_pkts -= 1;
 
-        //If next queue doesn't exist, the packet has been completely processed by the queue system
-        if (!q->next){
-            processed_pkts += 1;
-        }
-
         //compute and store the packet's queue delay
         total_queue_delay += sim_clock - q->pending_pkts.front();
         q->pending_pkts.pop_front();
 
         //schedule departure (= service completion) of the next pending packet
-        float service_time = expon(mean_service_time);
-        
-        //Identify packet location in order to pair the departure time with the right event type
-        int event_type = D1;
-        if (!q->next){
-            event_type = D2;
-        }
-
-        event_list.push(std::make_tuple(sim_clock + service_time, event_type));
-        total_service += service_time;
+        schedule_departure_event_from(q);
     }
 }
 
@@ -270,7 +255,6 @@ void report(void){
 
 
 //NOTE: "mean" is not a rate, but a time
-
 float expon(float mean){ 
     return -mean * log(1 - lcgrand(seed));
 }
@@ -278,6 +262,7 @@ float expon(float mean){
 float trunc_expon(float mean, int a, int b){
     return a - (log(1 - lcgrand(seed) * (1 - exp((a - b) / mean)))) * mean;
 }
+
 
 void connect(q_info_t* q1, q_info_t* q2){
     q1->next = q2;
