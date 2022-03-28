@@ -269,14 +269,14 @@ void report(void){
 }
 
 
-//NOTE: "mean", "a" and "b" are not rates, but times
+//NOTE: "mean" is not a rate, but a time
 
 float expon(float mean){ 
     return -mean * log(1 - lcgrand(seed));
 }
 
 float trunc_expon(float mean, int a, int b){
-    return 1/a - (log(1 - lcgrand(seed) * (1 - exp((1/a - 1/b) / mean)))) * mean;
+    return a - (log(1 - lcgrand(seed) * (1 - exp((a - b) / mean)))) * mean;
 }
 
 void connect(q_info_t* q1, q_info_t* q2){
