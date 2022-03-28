@@ -46,6 +46,7 @@ std::priority_queue<tup_t, std::vector<tup_t>, std::greater<tup_t>> event_list;
 //System configuration
 float mean_interarrival_time; 
 float mean_service_time;
+int   a, b; //Doubly Truncated Neg. Expon. Distribution in [a,b]
 int   num_pkts;
 int   seed;
 
@@ -82,7 +83,7 @@ int main(){
         return EXIT_FAILURE;
     }
 
-    for (int i = 0; i <= 4; i++){
+    for (int i = 0; i <= 6; i++){
         if (istream.eof()){
             std::cerr << "Input file error: not enough parameters" << std::endl;
             return EXIT_FAILURE;
@@ -96,12 +97,18 @@ int main(){
                 istream >> mean_service_time;
                 break;
             case 2:
-                istream >> num_pkts;
+                istream >> a;
                 break;
             case 3:
-                istream >> seed;
+                istream >> b;
                 break;
             case 4:
+                istream >> num_pkts;
+                break;
+            case 5:
+                istream >> seed;
+                break;
+            case 6:
                 istream >> q_limit;
                 break;
         }
@@ -153,7 +160,7 @@ void init(void) {
     total_service = 0;
 
     //Generate first event
-    event_list.push(std::make_tuple(expon(mean_interarrival_time), A1));
+    event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A1));
     next_event_type = A1;
 }
 
@@ -177,7 +184,7 @@ void schedule_departure_event_from(q_info_t* q){
         processed_pkts += 1;
     }
 
-    float service_time = expon(mean_service_time);
+    float service_time = trunc_expon(mean_service_time, a, b);
 
     //Identify packet location in order to pair the departure time with the right event type
     int event_type = (!q->next) ? D2 : D1;
@@ -206,7 +213,7 @@ void arrival_event(q_info_t* q) {
 
     //schedule next arrival (or else the simulation ends), but only for the first queue
     if(q->next){
-        event_list.push(std::make_tuple(sim_clock + expon(mean_interarrival_time), A1));
+        event_list.push(std::make_tuple(sim_clock + trunc_expon(mean_interarrival_time, a, b), A1));
     }
 }
 
