@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <fstream>
-#include<tuple>
+#include <tuple>
+#include <map>
 #include <queue>
 #include <deque>
 #include "lcgrand.h"
@@ -10,28 +11,32 @@
 
 static unsigned int current_id;    //Monotonically increasing queue id generator
 
+//Events are represented as tuples < arrival_time, event_type, queue_id >
+typedef std::tuple<float, int, unsigned int> tup_t;
+
 //System status mnemonics
 inline const int IDLE = 0;
 inline const int BUSY = 1;
 
 //Event type mnemonics
-inline const int A1 = 2;  //Arrival at queue 1
-inline const int D1 = 3;  //Departure from queue 1 (includes an immediate arrival at queue 2)
-inline const int D2 = 4;  //Departure from queue 2
+inline const int A = 2;  //Arrival (=customer arrival)
+inline const int D = 3;  //Departure (=service completion)
 
 
-//Events are represented as tuples <event_time, event_type>
-typedef std::tuple<float, int> tup_t;
+inline const int A1 = 4;  //Arrival (=customer arrival)
+inline const int D1 = 5;
+inline const int D2 = 6;
 
 //Simulation variables
-float sim_clock;
-int   next_event_type;
-int   q_limit;
+float        sim_clock;
+int          next_event_type;
+unsigned int next_queue_id;
+int          q_limit;
 
 //Useful information about the state of a queue
 class q_info_t {
 public:
-    unsigned int q_id;              //queue id
+    unsigned int id;                //queue id
     std::string name;               //queue name
     std::deque<float> pending_pkts; //arrival time of currently waiting/delayed packets
     int n_pkts;                     //size of pending_pkts
@@ -40,10 +45,17 @@ public:
     q_info_t* next;                 //reference to the next queue
 
     q_info_t(){
-        q_id = ++current_id;
-        name = "Q" + std::to_string(q_id);
+        id = ++current_id;
+        name = "Q" + std::to_string(id);
+        n_pkts = 0;
+        status = IDLE;
+
+        next = NULL;
     }
 };
+
+//Keep track of queues inside the network
+std::map<unsigned int, q_info_t*> q_registry;
 
 q_info_t q1;
 q_info_t q2;
@@ -64,8 +76,7 @@ float total_service;      //Sum of all service times
 void  init(void);                             //Initializes the simulation model and starts the simulation
 void  timing(void);                           //Determines the next event and perform the (simulated) time advance
 void  arrival_event(q_info_t* q);             //Arrival at queue 1 or 2 event routine
-void  departure_event(q_info_t* q, 
-                      int d_event);           //Departure from queue 1 or 2 event routine
+void  departure_event(q_info_t* q);           //Departure from queue 1 or 2 event routine
 void  report(void);                           //Generates report and print in output file
 float expon(float mean);                      //Exponential variate generator (Inverse-Transform Method)
 float trunc_expon(float mean, int a, int b);  //Doubly truncated exponential variate generator (Inverse-Transform Method)
@@ -124,18 +135,14 @@ int main(){
     init();
 
     while (processed_pkts < num_pkts){
-        //std::cout << "processed_pkts: " << processed_pkts << std::endl;
         timing();
         
         switch (next_event_type){
-        case A1:
-            arrival_event(&q1);
+        case A:
+            arrival_event(q_registry[next_queue_id]);
             break;
-        case D1:
-            departure_event(&q1, D1);
-            break;
-        case D2:
-            departure_event(&q2, D2);
+        case D:
+            departure_event(q_registry[next_queue_id]);
             break;
         }
     }
@@ -150,22 +157,18 @@ void init(void) {
     sim_clock = 0;
     current_id = 1;
 
-    q1.n_pkts = 0;
-    q2.n_pkts = 0;
-
-    q1.status = IDLE;
-    q2.status = IDLE;
+    //register the queues
+    q_registry[q1.id] = &q1;
+    q_registry[q2.id] = &q2;
 
     connect(&q1, &q2);
-    q2.next = NULL;
 
     processed_pkts = 0;
     total_queue_delay = 0;
     total_service = 0;
 
-    //Generate first event
-    event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A1));
-    next_event_type = A1;
+    //Generate first event in the first queue
+    event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A, q1.id));
 }
 
 void timing(void) {
@@ -177,8 +180,10 @@ void timing(void) {
     tup_t next_event = event_list.top();
     event_list.pop();
 
+    //Move (simulated) clock to the next event arrival
     sim_clock = std::get<0>(next_event);
     next_event_type = std::get<1>(next_event);
+    next_queue_id = std::get<2>(next_event);
 }
 
 //schedule departure (= service completion) from q
@@ -190,10 +195,8 @@ void schedule_departure_event_from(q_info_t* q){
 
     float service_time = trunc_expon(mean_service_time, a, b);
 
-    //Identify packet location in order to pair the departure time with the right event type
-    int event_type = (!q->next) ? D2 : D1;
-
-    event_list.push(std::make_tuple(sim_clock + service_time, event_type));
+    //Schedule departure from the queue
+    event_list.push(std::make_tuple(sim_clock + service_time, D, q->id));
     total_service += service_time;
 }
 
@@ -216,17 +219,13 @@ void arrival_event(q_info_t* q) {
     }
 
     //schedule next arrival (or else the simulation ends), but only for the first queue
-    if(q->next){
-        event_list.push(std::make_tuple(sim_clock + trunc_expon(mean_interarrival_time, a, b), A1));
+    if(q->id == 1){
+        event_list.push(std::make_tuple(sim_clock + trunc_expon(mean_interarrival_time, a, b), A, q->id));
     }
 }
 
-void departure_event(q_info_t* q, int d_event) {
+void departure_event(q_info_t* q) {
     std::cout << "departure " << q->name << "  (" << sim_clock << ")" << std::endl;
-    if (d_event != D1 && d_event != D2){
-        std::cerr << "Error: unrecognized (departure) event type" << std::endl;
-        exit(EXIT_FAILURE);
-    }
 
     //finished serving one packet
     if (q->next) { //immediate arrival to the next queue (if any)
