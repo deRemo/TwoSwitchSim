@@ -8,6 +8,8 @@
 #include "lcgrand.h"
 #include <math.h> 
 
+static unsigned int current_id;    //Monotonically increasing queue id generator
+
 //System status mnemonics
 inline const int IDLE = 0;
 inline const int BUSY = 1;
@@ -17,9 +19,6 @@ inline const int A1 = 2;  //Arrival at queue 1
 inline const int D1 = 3;  //Departure from queue 1 (includes an immediate arrival at queue 2)
 inline const int D2 = 4;  //Departure from queue 2
 
-//Queue names
-inline const std::string Q1 = "Q1";
-inline const std::string Q2 = "Q2";
 
 //Events are represented as tuples <event_time, event_type>
 typedef std::tuple<float, int> tup_t;
@@ -30,14 +29,21 @@ int   next_event_type;
 int   q_limit;
 
 //Useful information about the state of a queue
-typedef struct q_info {
+class q_info_t {
+public:
+    unsigned int q_id;              //queue id
     std::string name;               //queue name
     std::deque<float> pending_pkts; //arrival time of currently waiting/delayed packets
     int n_pkts;                     //size of pending_pkts
     int status;                     //queue status (either BUSY or IDLE)
 
-    q_info* next;                   //reference to the next queue
-} q_info_t;
+    q_info_t* next;                 //reference to the next queue
+
+    q_info_t(){
+        q_id = ++current_id;
+        name = "Q" + std::to_string(q_id);
+    }
+};
 
 q_info_t q1;
 q_info_t q2;
@@ -142,9 +148,7 @@ int main(){
 
 void init(void) {
     sim_clock = 0;
-
-    q1.name = Q1;
-    q2.name = Q2;
+    current_id = 1;
 
     q1.n_pkts = 0;
     q2.n_pkts = 0;
