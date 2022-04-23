@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+#Visualize the doubly trucated negative exponential distribution
+
 from math import log,exp
 import numpy as np
 import matplotlib.pyplot as plt
