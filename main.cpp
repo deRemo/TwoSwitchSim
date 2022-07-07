@@ -123,7 +123,9 @@ int main(){
         }
     }
 
+    std::cout << std::endl;
     istream.close();
+
     init();
 
     while (processed_pkts < num_pkts){
