@@ -59,8 +59,8 @@ public:
 //Keep track of queues inside the network
 std::map<unsigned int, q_info_t*> q_registry;
 
-q_info_t q1;
-q_info_t q2;
+q_info_t qA;
+q_info_t qB;
 std::priority_queue<tup_t, std::vector<tup_t>, std::greater<tup_t>> event_list;
 
 //System configuration
@@ -153,14 +153,14 @@ void init(void) {
     total_service = 0;
 
     //register the queues
-    q_registry[q1.id] = &q1;
-    q_registry[q2.id] = &q2;
+    q_registry[qA.id] = &qA;
+    q_registry[qB.id] = &qB;
 
     //connect the queues
-    connect(&q1, &q2);
+    connect(&qA, &qB);
 
     //Generate first event in the first queue
-    event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A, q1.id));
+    event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A, qA.id));
 }
 
 void timing(void) {
