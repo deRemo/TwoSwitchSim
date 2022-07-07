@@ -2,12 +2,14 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <tuple>
 #include <map>
 #include <queue>
 #include <deque>
-#include "lcgrand.h"
 #include <math.h> 
+
+#include "lcgrand.h"
 
 static unsigned int current_id;    //Monotonically increasing queue id generator
 
@@ -85,45 +87,42 @@ void connect(q_info_t* q1, q_info_t* q2);     //Connect q1 to q2 (q1->q2)
 
 int main(){
     //Read system configuration and generator seed
+    //config file syntax: 'name=value' (one per line)
     std::fstream istream("input.txt", std::ios::in);
+    std::string line;
 
-    if (!istream.is_open()){
-        std::cerr << "Couldn't open input file: does it exist?" << std::endl;
-        return EXIT_FAILURE;
-    }
+    while (std::getline(istream, line)) {
+        std::istringstream iss_line(line);
+        std::string key;
 
-    for (int i = 0; i <= 6; i++){
-        if (istream.eof()){
-            std::cerr << "Input file error: not enough parameters" << std::endl;
-            return EXIT_FAILURE;
-        }
+        if (line[0] != '#' && std::getline(iss_line, key, '=')){
+            std::string value;
+            if (std::getline(iss_line, value)) {
+                std::cout << key << " = " << value << std::endl;
 
-        switch(i){
-            case 0:
-                istream >> mean_interarrival_time;
-                break;
-            case 1:
-                istream >> mean_service_time;
-                break;
-            case 2:
-                istream >> a;
-                break;
-            case 3:
-                istream >> b;
-                break;
-            case 4:
-                istream >> num_pkts;
-                break;
-            case 5:
-                istream >> seed;
-                break;
-            case 6:
-                istream >> q_limit;
-                break;
+                if (key == "mean_interarrival_time") {
+                    mean_interarrival_time = std::stof(value);
+                } else if (key == "mean_service_time") {
+                    mean_service_time = std::stof(value);
+                } else if (key == "a") {
+                    a = std::stoi(value);
+                } else if (key == "b") {
+                    b = std::stoi(value);;
+                } else if (key == "num_pkts") {
+                    num_pkts = std::stoi(value);
+                } else if (key == "seed") {
+                    seed = std::stoi(value);
+                } else if (key == "q_limit") {
+                    q_limit = std::stoi(value);
+                } else {
+                    std::cout << "Unrecognized option" << key << std::endl;
+                    return EXIT_FAILURE;
+                }
+            } 
         }
     }
+
     istream.close();
-
     init();
 
     while (processed_pkts < num_pkts){
