@@ -61,6 +61,7 @@ std::map<unsigned int, q_info_t*> q_registry;
 
 q_info_t qA;
 q_info_t qB;
+q_info_t qC;
 std::priority_queue<tup_t, std::vector<tup_t>, std::greater<tup_t>> event_list;
 
 //System configuration
@@ -155,9 +156,11 @@ void init(void) {
     //register the queues
     q_registry[qA.id] = &qA;
     q_registry[qB.id] = &qB;
+    q_registry[qC.id] = &qC;
 
     //connect the queues
     connect(&qA, &qB);
+    connect(&qB, &qC);
 
     //Generate first event in the first queue
     event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A, qA.id));
