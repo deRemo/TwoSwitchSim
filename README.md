@@ -6,7 +6,7 @@ A C++ Discrete-Event Network Simulator for two cascading switches, developed for
 ```
 make
 ```
-2) Create an input.txt file containing the following parameters (one per line): inter-arrival time, service time, number of packets to process, queue size limit
+2) Create an input.txt file containing the parameters defined as in input_template.txt (follow the syntax exactly to avoid parsing errors), such as inter-arrival time, service times, number of packets to process and queue size limit
 3) Run the simulations with:
 ```
 ./main
