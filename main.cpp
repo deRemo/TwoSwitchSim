@@ -216,6 +216,10 @@ void arrival_event(q_info_t* q) {
 
         if (q->n_pkts > q_limit){
             std::cerr << q->name << " overflow at (simulated) time " << sim_clock << std::endl;
+            std::cerr << "mean service time: " << q->mean_service_time << "  ||  mean inter-arrival time: "<< mean_interarrival_time << std::endl;
+
+            //Abort test and remove the output file (if it exits) to avoid ambiguities
+            std::remove("output.txt");
             exit(EXIT_FAILURE); 
         }
 
