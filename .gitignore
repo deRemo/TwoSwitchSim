@@ -37,3 +37,4 @@ main
 input.txt
 output.txt
 *.pdf
+.ipynb_checkpoints/
