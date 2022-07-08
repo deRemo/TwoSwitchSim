@@ -43,6 +43,8 @@ public:
     std::deque<float> pending_pkts; //arrival time of currently waiting/delayed packets
     int n_pkts;                     //size of pending_pkts
     int status;                     //queue status (either BUSY or IDLE)
+ 
+    float mean_service_time;
 
     q_info_t* next;                 //reference to the next queue
 
@@ -51,6 +53,8 @@ public:
         name = "Q" + std::to_string(id);
         n_pkts = 0;
         status = IDLE;
+
+        mean_service_time = -1;
 
         next = NULL;
     }
@@ -66,7 +70,10 @@ std::priority_queue<tup_t, std::vector<tup_t>, std::greater<tup_t>> event_list;
 
 //System configuration
 float mean_interarrival_time; 
-float mean_service_time;
+float mean_service_time_A;
+float mean_service_time_B;
+float mean_service_time_C;
+
 int   a, b; //Doubly Truncated Neg. Expon. Distribution in [a,b]
 int   num_pkts;
 int   seed;
@@ -103,8 +110,12 @@ int main(){
 
                 if (key == "mean_interarrival_time") {
                     mean_interarrival_time = std::stof(value);
-                } else if (key == "mean_service_time") {
-                    mean_service_time = std::stof(value);
+                } else if (key == "mean_service_time_A") {
+                    mean_service_time_A = std::stof(value);
+                } else if (key == "mean_service_time_B") {
+                    mean_service_time_B = std::stof(value);
+                } else if (key == "mean_service_time_C") {
+                    mean_service_time_C = std::stof(value);
                 } else if (key == "a") {
                     a = std::stoi(value);
                 } else if (key == "b") {
@@ -155,6 +166,11 @@ void init(void) {
     total_queue_delay = 0;
     total_service = 0;
 
+    //Set user-defined service times
+    qA.mean_service_time = mean_service_time_A;
+    qB.mean_service_time = mean_service_time_B;
+    qC.mean_service_time = mean_service_time_C;
+
     //register the queues
     q_registry[qA.id] = &qA;
     q_registry[qB.id] = &qB;
@@ -190,7 +206,7 @@ void schedule_departure_event_from(q_info_t* q){
         processed_pkts += 1;
     }
 
-    float service_time = trunc_expon(mean_service_time, a, b);
+    float service_time = trunc_expon(q->mean_service_time, a, b);
 
     //Schedule departure from the queue
     event_list.push(std::make_tuple(sim_clock + service_time, D, q->id));

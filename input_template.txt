@@ -2,8 +2,9 @@
 [SYSTEM]
 
 mean_interarrival_time=0.129
-mean_service_time=0.03836
-
+mean_service_time_A=0.0004
+mean_service_time_B=0.0006
+mean_service_time_C=0.0012
 a=64
 b=1500
 
