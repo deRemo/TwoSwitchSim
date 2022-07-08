@@ -1,0 +1,12 @@
+#Syntax: 'name=value'
+[SYSTEM]
+
+mean_interarrival_time=0.129
+mean_service_time=0.03836
+
+a=64
+b=1500
+
+num_pkts=100
+seed=1
+q_limit=10
