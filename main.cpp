@@ -24,11 +24,6 @@ inline const int BUSY = 1;
 inline const int A = 2;  //Arrival (=customer arrival)
 inline const int D = 3;  //Departure (=service completion)
 
-
-inline const int A1 = 4;  //Arrival (=customer arrival)
-inline const int D1 = 5;
-inline const int D2 = 6;
-
 //Simulation variables
 float        sim_clock;
 int          next_event_type;
