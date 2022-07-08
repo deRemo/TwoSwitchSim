@@ -13,7 +13,7 @@
 
 static unsigned int current_id;    //Monotonically increasing queue id generator
 
-//Events are represented as tuples < arrival_time, event_type, queue_id >
+//Events are represented as tuples < event_time, event_type, queue_id >
 typedef std::tuple<float, int, unsigned int> tup_t;
 
 //System status mnemonics
