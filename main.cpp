@@ -41,7 +41,7 @@ public:
  
     float mean_service_time;
 
-    q_info_t* next;                 //reference to the next queue
+    q_info_t* next;                 //reference to the next queue in the system
 
     q_info_t(){
         id = ++current_id;
