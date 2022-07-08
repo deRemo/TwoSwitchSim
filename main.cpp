@@ -255,7 +255,7 @@ void report(void){
     float avg_system_delay = (total_queue_delay + total_service) / processed_pkts;
 
     std::cout << "avg system delay: " << avg_system_delay << " time units" << std::endl;
-    ostream << avg_system_delay;
+    ostream << avg_system_delay << std::endl;
 
     ostream.close();
 }
