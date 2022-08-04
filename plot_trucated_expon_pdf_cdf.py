@@ -20,26 +20,23 @@ plt.rc('ytick', labelsize=12)
 
 
 def inv_expon_CDF(u):
-    print("lol")
     return -MEAN * log(u);
 
 #Inverse (doubly) trucated negative exponential cdf
 #(As defined in the simulator)
 #Derived by me starting by a cdf found online
 def inv_truncated_expon_CDF1(u):
-    print("lol2")
     return A - MEAN * (log(1 - (u * (1 - exp((A - B) / MEAN)))))
 
 
 #Completely derived by me
 def inv_truncated_expon_CDF2(u):
-    print("lol3")
     return -MEAN * log(exp(-A/MEAN) - (exp(-A/MEAN) - exp(-B/MEAN)) * u)
 
 #Generate random uniform number (Inverse-Transform)
-nums = []
-
 for inv_f,name in zip([inv_expon_CDF, inv_truncated_expon_CDF1, inv_truncated_expon_CDF2], ["inv_expon", "inv_t_expon1", "inv_t_expon2"]):
+    nums = []
+
     for i in range(N):
         u = np.random.uniform(low=0.0, high=1.0)
 
