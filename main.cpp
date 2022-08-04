@@ -277,8 +277,9 @@ void report(void){
 
 
 //NOTE: "mean" is not a rate, but a time
+//NOTE: The original formula is -(ln(1-U)/lambda), but the -1 is negligible: since 1-U and U are both uniform
 float expon(float mean){ 
-    return -mean * log(1 - lcgrand(seed));
+    return -mean * log(lcgrand(seed));
 }
 
 float trunc_expon(float mean, int a, int b){
