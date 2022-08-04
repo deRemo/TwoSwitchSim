@@ -209,7 +209,7 @@ void schedule_departure_event_from(q_info_t* q){
 }
 
 void arrival_event(q_info_t* q) {
-    std::cout << "arrival   " << q->name << "  (sim. time: " << sim_clock << ")" << std::endl;
+    std::cout << "arrival   " << q->name << "  (sim. time: " << sim_clock << ") (queue size: " << q->n_pkts << ")" << std::endl;
 
     if (q->status == BUSY) { //Packet cannot be processed immediately, keep it pending
         q->n_pkts += 1;
@@ -237,7 +237,7 @@ void arrival_event(q_info_t* q) {
 }
 
 void departure_event(q_info_t* q) {
-    std::cout << "departure " << q->name << "  (sim. time: " << sim_clock << ")" << std::endl;
+    std::cout << "departure " << q->name << "  (sim. time: " << sim_clock << ") (queue size: " << q->n_pkts << ")" << std::endl;
 
     //finished serving one packet
     if (q->next) { //immediate arrival to the next queue (if any)
