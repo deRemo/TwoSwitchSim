@@ -280,7 +280,7 @@ float expon(float mean){
 
 float trunc_expon(float mean, int a, int b){
     return -mean * log(exp(-a/mean) - (exp(-a/mean) - exp(-b/mean)) * lcgrand(seed));
-    // TODO test correctness: return a - (log(1 - lcgrand(seed) * (1 - exp((a - b) / mean)))) * mean;
+    // original impl: return a - (log(1 - lcgrand(seed) * (1 - exp((a - b) / mean)))) * mean;
 }
 
 
