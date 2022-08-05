@@ -1,12 +1,11 @@
 #Syntax: 'name=value'
 [SYSTEM]
-
-mean_interarrival_time=0.129
-mean_service_time_1=0.0006
-mean_service_time_2=0.0012
-a=64
-b=1500
-
-num_pkts=100
+input_rate=9900000
+output_rate_1=20000000
+output_rate_2=10000000
+avg_pkt_size=6256
+min_pkt_size=512
+max_pkt_size=12000
+num_pkts=10000
 seed=1
-q_limit=10
+q_limit=1000
