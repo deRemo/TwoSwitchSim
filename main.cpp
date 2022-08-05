@@ -11,10 +11,8 @@
 
 #include "lcgrand.h"
 
-static unsigned int current_id;    //Monotonically increasing queue id generator
-
-//Events are represented as tuples < event_time, event_type, queue_id >
-typedef std::tuple<float, int, unsigned int> tup_t;
+//Monotonically increasing queue id generator
+static unsigned int current_id;
 
 //System status mnemonics
 inline const int IDLE = 0;
@@ -39,7 +37,7 @@ public:
     int n_pkts;                     //size of pending_pkts
     int status;                     //queue status (either BUSY or IDLE)
  
-    float mean_service_time;
+    float output_rate;              //Output rate in bits/s
 
     q_info_t* next;                 //reference to the next queue in the system
 
@@ -49,7 +47,7 @@ public:
         n_pkts = 0;
         status = IDLE;
 
-        mean_service_time = -1;
+        output_rate = -1;
 
         next = NULL;
     }
@@ -60,14 +58,15 @@ std::map<unsigned int, q_info_t*> q_registry;
 
 q_info_t q1;
 q_info_t q2;
+
+//Events are represented as tuples < event_time, event_type, queue_id >
+typedef std::tuple<float, int, unsigned int> tup_t;
 std::priority_queue<tup_t, std::vector<tup_t>, std::greater<tup_t>> event_list;
 
 //System configuration
-float mean_interarrival_time; 
-float mean_service_time_1;
-float mean_service_time_2;
+float input_rate, output_rate_1, output_rate_2; //in bits/s
+float min_pkt_size, avg_pkt_size, max_pkt_size; //in bits
 
-float   a, b; //Doubly Truncated Neg. Expon. Distribution in [a,b]
 int   num_pkts;
 int   seed;
 
@@ -101,16 +100,18 @@ int main(){
             if (std::getline(iss_line, value)) {
                 std::cout << key << " = " << value << std::endl;
 
-                if (key == "mean_interarrival_time") {
-                    mean_interarrival_time = std::stof(value);
-                } else if (key == "mean_service_time_1") {
-                    mean_service_time_1 = std::stof(value);
-                } else if (key == "mean_service_time_2") {
-                    mean_service_time_2 = std::stof(value);
-                } else if (key == "a") {
-                    a = std::stof(value);
-                } else if (key == "b") {
-                    b = std::stof(value);;
+                if (key == "input_rate") {
+                    input_rate = std::stof(value);
+                } else if (key == "output_rate_1") {
+                    output_rate_1 = std::stof(value);
+                } else if (key == "output_rate_2") {
+                    output_rate_2 = std::stof(value);
+                } else if (key == "avg_pkt_size") {
+                    avg_pkt_size = std::stof(value);
+                } else if (key == "min_pkt_size") {
+                    min_pkt_size = std::stof(value);
+                } else if (key == "max_pkt_size") {
+                    max_pkt_size = std::stof(value);;
                 } else if (key == "num_pkts") {
                     num_pkts = std::stoi(value);
                 } else if (key == "seed") {
@@ -158,8 +159,8 @@ void init(void) {
     total_service = 0;
 
     //Set user-defined service times
-    q1.mean_service_time = mean_service_time_1;
-    q2.mean_service_time = mean_service_time_2;
+    q1.output_rate = output_rate_1;
+    q2.output_rate = output_rate_2;
 
     //register the queues
     q_registry[q1.id] = &q1;
@@ -169,7 +170,8 @@ void init(void) {
     connect(&q1, &q2);
 
     //Generate first event in the first queue
-    event_list.push(std::make_tuple(trunc_expon(mean_interarrival_time, a, b), A, q1.id));
+    float pkt_size = trunc_expon(avg_pkt_size, min_pkt_size, max_pkt_size);
+    event_list.push(std::make_tuple(pkt_size / input_rate, A, q1.id));
 }
 
 void timing(void) {
@@ -194,10 +196,10 @@ void schedule_departure_event_from(q_info_t* q){
         processed_pkts += 1;
     }
 
-    float service_time = trunc_expon(q->mean_service_time, a, b);
-
     //Schedule departure from the queue
+    float service_time = trunc_expon(avg_pkt_size, min_pkt_size, max_pkt_size) / q->output_rate;
     event_list.push(std::make_tuple(sim_clock + service_time, D, q->id));
+
     total_service += service_time;
 }
 
@@ -209,8 +211,8 @@ void arrival_event(q_info_t* q) {
 
         if (q->n_pkts > q_limit){
             std::cerr << q->name << " overflow at (simulated) time " << sim_clock << std::endl;
-            std::cerr << "Config: mean service time: " << q->mean_service_time << "  ||  mean inter-arrival time: "<< mean_interarrival_time << std::endl;
-
+            std::cerr << "Config: output rate: " << q->output_rate << " bits/s  ||  input rate: "<< input_rate << " bits/s" << std::endl;
+            std::cerr << "Processed pkts so far: " << processed_pkts << std::endl;
             //Abort test and remove the output file (if it exits) to avoid ambiguities
             std::remove("output.txt");
             exit(EXIT_FAILURE); 
@@ -225,7 +227,8 @@ void arrival_event(q_info_t* q) {
 
     //schedule next arrival (or else the simulation ends), but only for the first queue
     if(q->id == 1){
-        event_list.push(std::make_tuple(sim_clock + trunc_expon(mean_interarrival_time, a, b), A, q->id));
+        float pkt_size = trunc_expon(avg_pkt_size, min_pkt_size, max_pkt_size);
+        event_list.push(std::make_tuple(sim_clock + (pkt_size / input_rate), A, q->id));
     }
 }
 
@@ -275,6 +278,7 @@ float expon(float mean){
     return -mean * log(lcgrand(seed));
 }
 
+//Doubly Truncated Neg. Expon. Distribution in [a,b]
 float trunc_expon(float mean, float a, float b){
     return -mean * log(exp(-a/mean) - (exp(-a/mean) - exp(-b/mean)) * lcgrand(seed));
     // original impl: return a - (log(1 - lcgrand(seed) * (1 - exp((a - b) / mean)))) * mean;
