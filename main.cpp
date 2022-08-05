@@ -111,9 +111,9 @@ int main(){
                 } else if (key == "mean_service_time_C") {
                     mean_service_time_C = std::stof(value);
                 } else if (key == "a") {
-                    a = std::stoi(value);
+                    a = std::stof(value);
                 } else if (key == "b") {
-                    b = std::stoi(value);;
+                    b = std::stof(value);;
                 } else if (key == "num_pkts") {
                     num_pkts = std::stoi(value);
                 } else if (key == "seed") {
