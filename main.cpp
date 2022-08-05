@@ -68,7 +68,7 @@ float mean_service_time_A;
 float mean_service_time_B;
 float mean_service_time_C;
 
-int   a, b; //Doubly Truncated Neg. Expon. Distribution in [a,b]
+float   a, b; //Doubly Truncated Neg. Expon. Distribution in [a,b]
 int   num_pkts;
 int   seed;
 
@@ -83,7 +83,7 @@ void  arrival_event(q_info_t* q);             //Arrival at queue 1 or 2 event ro
 void  departure_event(q_info_t* q);           //Departure from queue 1 or 2 event routine
 void  report(void);                           //Generates report and print in output file
 float expon(float mean);                      //Exponential variate generator (Inverse-Transform Method)
-float trunc_expon(float mean, int a, int b);  //Doubly truncated exponential variate generator (Inverse-Transform Method)
+float trunc_expon(float mean, float a, float b);  //Doubly truncated exponential variate generator (Inverse-Transform Method)
 
 void connect(q_info_t* q1, q_info_t* q2);     //Connect q1 to q2 (q1->q2)
 
@@ -278,7 +278,7 @@ float expon(float mean){
     return -mean * log(lcgrand(seed));
 }
 
-float trunc_expon(float mean, int a, int b){
+float trunc_expon(float mean, float a, float b){
     return -mean * log(exp(-a/mean) - (exp(-a/mean) - exp(-b/mean)) * lcgrand(seed));
     // original impl: return a - (log(1 - lcgrand(seed) * (1 - exp((a - b) / mean)))) * mean;
 }
