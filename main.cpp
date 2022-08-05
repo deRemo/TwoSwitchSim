@@ -64,9 +64,8 @@ std::priority_queue<tup_t, std::vector<tup_t>, std::greater<tup_t>> event_list;
 
 //System configuration
 float mean_interarrival_time; 
-float mean_service_time_A;
-float mean_service_time_B;
-float mean_service_time_C;
+float mean_service_time_1;
+float mean_service_time_2;
 
 float   a, b; //Doubly Truncated Neg. Expon. Distribution in [a,b]
 int   num_pkts;
@@ -104,12 +103,10 @@ int main(){
 
                 if (key == "mean_interarrival_time") {
                     mean_interarrival_time = std::stof(value);
-                } else if (key == "mean_service_time_A") {
-                    mean_service_time_A = std::stof(value);
-                } else if (key == "mean_service_time_B") {
-                    mean_service_time_B = std::stof(value);
-                } else if (key == "mean_service_time_C") {
-                    mean_service_time_C = std::stof(value);
+                } else if (key == "mean_service_time_1") {
+                    mean_service_time_1 = std::stof(value);
+                } else if (key == "mean_service_time_2") {
+                    mean_service_time_2 = std::stof(value);
                 } else if (key == "a") {
                     a = std::stof(value);
                 } else if (key == "b") {
@@ -161,8 +158,8 @@ void init(void) {
     total_service = 0;
 
     //Set user-defined service times
-    q1.mean_service_time = mean_service_time_B;
-    q2.mean_service_time = mean_service_time_C;
+    q1.mean_service_time = mean_service_time_1;
+    q2.mean_service_time = mean_service_time_2;
 
     //register the queues
     q_registry[q1.id] = &q1;
